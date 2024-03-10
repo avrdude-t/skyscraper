@@ -82,6 +82,7 @@ MainScreen::MainScreen(Skyscraper *parent, int width, int height) : wxFrame(0, -
 	step_backward = false;
 
 	freelook = false;
+	freelook_init = false;
 
 	key_right = frontend->GetKeyConfigString("Skyscraper.Frontend.Keyboard.Right", "D")[0];
 	key_left = frontend->GetKeyConfigString("Skyscraper.Frontend.Keyboard.Left", "A")[0];
@@ -186,6 +187,9 @@ void MainScreen::OnIdle(wxIdleEvent& event)
 				frontend->ReportFatalError("Unhandled OGRE exception:\n\n" + e.getFullDescription() + "\n\nSkyscraper will now exit.  Please report this as a bug.");
 				frontend->Quit();
 			}
+
+			if (!frontend->GetActiveEngine())
+				freelook_init = false;
 
 			HandleMouseMovement();
 			event.RequestMore(); //request more idles
@@ -736,6 +740,11 @@ void MainScreen::HandleMouseMovement()
 	camera->mouse_y = ScreenToClient(wxGetMousePosition()).y;
 
 	//freelook mode
+	if (!freelook_init)
+	{
+		EnableFreelook(camera->Freelook);	//call EnableFreelook to make sure crosshair is displayed if frelook is enabled from simulator start (Skyscraper.SBS.Camera.Freelook)
+		freelook_init = true;
+	}
 	if (camera->Freelook == true)
 	{
 		if (freelook == false)

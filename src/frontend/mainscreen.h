@@ -70,6 +70,7 @@ private:
 	char key_pickup, key_load, key_enter;
 
 	bool freelook;
+	bool freelook_init;
 
 	DECLARE_EVENT_TABLE()
 };
