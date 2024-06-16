@@ -1,10 +1,10 @@
 /*
 	Scalable Building Simulator - Wall Object
 	The Skyscraper Project - Version 1.12 Alpha
-	Copyright (C)2004-2023 Ryan Thoryk
+	Copyright (C)2004-2024 Ryan Thoryk
 	https://www.skyscrapersim.net
 	https://sourceforge.net/projects/skyscraper/
-	Contact - ryan@thoryk.com
+	Contact - ryan@skyscrapersim.net
 
 	This program is free software; you can redistribute it and/or
 	modify it under the terms of the GNU General Public License
@@ -24,9 +24,12 @@
 #ifndef _SBS_WALL_H
 #define _SBS_WALL_H
 
-#include "polygon.h"
+#include "triangle.h"
+#include "mesh.h"
 
 namespace SBS {
+
+class Polygon;
 
 class SBSIMPEXP Wall : public Object
 {
@@ -38,7 +41,7 @@ public:
 	Polygon* AddQuad(const std::string &name, const std::string &texture, const Vector3 &v1, const Vector3 &v2, const Vector3 &v3, const Vector3 &v4, Real tw, Real th, bool autosize);
 	Polygon* AddPolygon(const std::string &name, const std::string &texture, PolyArray &vertices, Real tw, Real th, bool autosize);
 	Polygon* AddPolygonSet(const std::string &name, const std::string &material, PolygonSet &vertices, Matrix3 &tex_matrix, Vector3 &tex_vector);
-	int CreatePolygon(std::vector<Triangle> &triangles, std::vector<Extents> &index_extents, Matrix3 &tex_matrix, Vector3 &tex_vector, const std::string &material, const std::string &name, Plane &plane);
+	Polygon* CreatePolygon(std::vector<Triangle> &triangles, std::vector<Extents> &index_extents, Matrix3 &tex_matrix, Vector3 &tex_vector, const std::string &material, const std::string &name, Plane &plane);
 	void DeletePolygons(bool recreate_collider = true);
 	void DeletePolygon(int index, bool recreate_colliders);
 	int GetPolygonCount();
@@ -58,7 +61,7 @@ private:
 	MeshObject* meshwrapper;
 
 	//polygon array
-	std::vector<Polygon> polygons;
+	std::vector<Polygon*> polygons;
 
 	//pointer to parent array
 	std::vector<Wall*> *parent_array;

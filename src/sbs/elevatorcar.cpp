@@ -1,29 +1,30 @@
 /*
-Scalable Building Simulator - Elevator Car Object
-The Skyscraper Project - Version 1.12 Alpha
-Copyright (C)2004-2023 Ryan Thoryk
-https://www.skyscrapersim.net
-https://sourceforge.net/projects/skyscraper/
-Contact - ryan@thoryk.com
+	Scalable Building Simulator - Elevator Car Object
+	The Skyscraper Project - Version 1.12 Alpha
+	Copyright (C)2004-2024 Ryan Thoryk
+	https://www.skyscrapersim.net
+	https://sourceforge.net/projects/skyscraper/
+	Contact - ryan@skyscrapersim.net
 
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+	You should have received a copy of the GNU General Public License
+	along with this program; if not, write to the Free Software
+	Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "globals.h"
 #include "sbs.h"
 #include "mesh.h"
+#include "polymesh.h"
 #include "floor.h"
 #include "elevator.h"
 #include "elevatordoor.h"
@@ -91,9 +92,11 @@ ElevatorCar::ElevatorCar(Elevator *parent, int number) : Object(parent)
 	UseFloorSounds = false;
 	UseDirMessageSounds = false;
 	UseDoorMessageSounds = false;
-	Music = sbs->GetConfigString("Skyscraper.SBS.Elevator.Car.Music", "");
+	MusicUp = sbs->GetConfigString("Skyscraper.SBS.Elevator.Car.MusicUp", "");
+	MusicDown = sbs->GetConfigString("Skyscraper.SBS.Elevator.Car.MusicDown", "");
 	MusicOn = sbs->GetConfigBool("Skyscraper.SBS.Elevator.Car.MusicOn", true);
 	MusicOnMove = sbs->GetConfigBool("Skyscraper.SBS.Elevator.Car.MusicOnMove", false);
+	MusicAlwaysOn = sbs->GetConfigBool("Skyscraper.SBS.Elevator.Car.MusicAlwaysOn", false);
 	AutoEnable = sbs->GetConfigBool("Skyscraper.SBS.Elevator.Car.AutoEnable", true);
 	CameraOffset = 0;
 	FirstRun = true;
@@ -108,6 +111,8 @@ ElevatorCar::ElevatorCar(Elevator *parent, int number) : Object(parent)
 	Offset = 0;
 	GotoFloor = false;
 	LateDirection = 0;
+	last_music_direction = 0;
+	MessageOnMove = false;
 
 	std::string name = parent->GetName() + ":Car " + ToString(number);
 	SetName(name);
@@ -698,39 +703,113 @@ void ElevatorCar::Loop()
 		}
 	}
 
-	//play music sound if in elevator, or if doors open
-	if (Music != "")
+	//music processing
+	if (MusicUp != "" || MusicDown != "")
 	{
-		if (musicsound->IsPlaying() == false && MusicOn == true && ((MusicOnMove == true && parent->IsMoving == true) || MusicOnMove == false))
+		if (MusicAlwaysOn == false) //standard mode
 		{
-			if (parent->InServiceMode() == false)
+			//play music sound if in elevator, or if doors open
+			if (musicsound->IsPlaying() == false && MusicOn == true && ((MusicOnMove == true && parent->IsMoving == true) || MusicOnMove == false))
 			{
-				if (InCar() == true || AreDoorsOpen() == true || AreDoorsMoving() != 0)
+				if (parent->InServiceMode() == false)
+				{
+					if (InCar() == true || AreDoorsOpen() == true || AreDoorsMoving() != 0)
+					{
+						if (sbs->Verbose)
+							Report("playing music");
+
+						int direction = parent->ActiveDirection;
+
+						//load music if not already loaded, or if music direction has changed
+						if (musicsound->IsLoaded() == false || (last_music_direction != direction && MusicOn == true))
+						{
+							if (direction == 0 && last_music_direction != 0)
+								direction = last_music_direction;
+
+							if (direction >= 0)
+								musicsound->Load(MusicUp);
+							else
+								musicsound->Load(MusicDown);
+
+							last_music_direction = direction;
+						}
+
+						musicsound->SetLoopState(true);
+						musicsound->Play(false);
+					}
+				}
+			}
+			else
+			{
+				if ((MusicOn == false || parent->InServiceMode() == true || (MusicOnMove == true && parent->IsMoving == false)) && musicsound->IsPlaying() == true)
+				{
+					if (sbs->Verbose)
+						Report("stopping music");
+					musicsound->Pause();
+				}
+				else if (InCar() == false && AreDoorsOpen() == false && AreDoorsMoving() == 0)
+				{
+					//turn off music if outside elevator car and doors are closed
+					if (sbs->Verbose)
+						Report("stopping music");
+					musicsound->Pause();
+				}
+				else if (MusicOn == true && MusicOnMove == false && musicsound->IsPlaying() == true)
+				{
+					//stop music if elevator changes direction while music is on
+					if (last_music_direction != parent->ActiveDirection && parent->ActiveDirection != 0)
+						musicsound->Pause();
+				}
+			}
+		}
+		else if (MusicAlwaysOn == true) //always-on mode
+		{
+			if (musicsound->IsPlaying() == false && MusicOn == true && MusicOnMove == false)
+			{
+				//enable music if in always-on mode
+
+				if (parent->InServiceMode() == false)
 				{
 					if (sbs->Verbose)
 						Report("playing music");
 
-					if (musicsound->IsLoaded() == false)
-						musicsound->Load(Music);
+					int direction = parent->ActiveDirection;
+
+					//load music if not already loaded, or if music direction has changed
+					if (musicsound->IsLoaded() == false || (last_music_direction != direction && MusicOn == true))
+					{
+						if (direction == 0 && last_music_direction != 0)
+							direction = last_music_direction;
+
+						if (direction >= 0)
+							musicsound->Load(MusicUp);
+						else
+							musicsound->Load(MusicDown);
+
+						last_music_direction = direction;
+					}
 
 					musicsound->SetLoopState(true);
+					musicsound->SetVolume(0.0);
 					musicsound->Play(false);
 				}
 			}
-		}
-		else
-		{
-			if ((MusicOn == false || parent->InServiceMode() == true || (MusicOnMove == true && parent->IsMoving == false)) && musicsound->IsPlaying() == true)
+			else if (MusicOn == true && MusicOnMove == false && musicsound->IsPlaying() == true)
 			{
-				if (sbs->Verbose)
-					Report("stopping music");
-				musicsound->Pause();
-			}
-			else if (InCar() == false && AreDoorsOpen() == false && AreDoorsMoving() == 0)
-			{
-				if (sbs->Verbose)
-					Report("stopping music");
-				musicsound->Pause();
+				if (last_music_direction != parent->ActiveDirection && parent->ActiveDirection != 0)
+				{
+					//stop music if elevator changes direction while music is on
+					musicsound->Pause();
+				}
+				else
+				{
+					//manage music volume state
+					//(turn on volume only if inside the elevator, or if the doors are open)
+					if (InCar() == true || AreDoorsOpen() == true || AreDoorsMoving() != 0)
+						musicsound->SetVolume(1.0);
+					else
+						musicsound->SetVolume(0.0);
+				}
 			}
 		}
 	}
@@ -2553,10 +2632,17 @@ bool ElevatorCar::PlayMessageSound(bool type)
 		if (UseDirMessageSounds == false || DirMessageSound == true)
 			return false;
 
-		int direction = parent->LastChimeDirection;
+		int direction = 0;
 
-		if (parent->LastChimeDirection == 0)
-			direction = parent->LastQueueDirection;
+		if (MessageOnMove == false)
+		{
+			direction = parent->LastChimeDirection;
+
+			if (parent->LastChimeDirection == 0)
+				direction = parent->LastQueueDirection;
+		}
+		else
+			direction = parent->ActiveDirection;
 
 		if (direction == 1)
 		{
@@ -2741,11 +2827,11 @@ Real ElevatorCar::SetHeight()
 	{
 		Height = 0;
 		//search through mesh geometry to find actual height
-		for (size_t i = 0; i < Mesh->Submeshes.size(); i++)
+		for (size_t i = 0; i < Mesh->GetPolyMesh()->Submeshes.size(); i++)
 		{
-			for (size_t j = 0; j < Mesh->Submeshes[i].MeshGeometry.size(); j++)
+			for (size_t j = 0; j < Mesh->GetPolyMesh()->Submeshes[i].MeshGeometry.size(); j++)
 			{
-				Real y = sbs->ToLocal(Mesh->Submeshes[i].MeshGeometry[j].vertex.y);
+				Real y = sbs->ToLocal(Mesh->GetPolyMesh()->Submeshes[i].MeshGeometry[j].vertex.y);
 
 				//set height value
 				if (y > Height)
@@ -2793,9 +2879,9 @@ bool ElevatorCar::IsInCar(const Vector3 &position, bool camera)
 
 	if (position.y >= (GetPosition().y - 0.1) && position.y < GetPosition().y + (Height * 2))
 	{
-		if (Mesh->InBoundingBox(position, false) == true)
+		if (Mesh->GetPolyMesh()->InBoundingBox(position, false) == true)
 		{
-			if (Mesh->HitBeam(position, Vector3::NEGATIVE_UNIT_Y, Height) >= 0)
+			if (Mesh->GetPolyMesh()->HitBeam(position, Vector3::NEGATIVE_UNIT_Y, Height) >= 0)
 			{
 				if (camera == true)
 					CameraOffset = position.y - GetPosition().y;

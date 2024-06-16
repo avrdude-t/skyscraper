@@ -1,24 +1,24 @@
 /*
-        Scalable Building Simulator - Texture Manager
-        The Skyscraper Project - Version 1.12 Alpha
-        Copyright (C)2004-2023 Ryan Thoryk
-        https://www.skyscrapersim.net
-        https://sourceforge.net/projects/skyscraper/
-        Contact - ryan@thoryk.com
+	Scalable Building Simulator - Texture Manager
+	The Skyscraper Project - Version 1.12 Alpha
+	Copyright (C)2004-2024 Ryan Thoryk
+	https://www.skyscrapersim.net
+	https://sourceforge.net/projects/skyscraper/
+	Contact - ryan@skyscrapersim.net
 
-        This program is free software; you can redistribute it and/or
-        modify it under the terms of the GNU General Public License
-        as published by the Free Software Foundation; either version 2
-        of the License, or (at your option) any later version.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 
-        This program is distributed in the hope that it will be useful,
-        but WITHOUT ANY WARRANTY; without even the implied warranty of
-        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-        GNU General Public License for more details.
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-        You should have received a copy of the GNU General Public License
-        along with this program; if not, write to the Free Software
-        Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+	You should have received a copy of the GNU General Public License
+	along with this program; if not, write to the Free Software
+	Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #ifndef _SBS_TEXTURE_H
@@ -33,6 +33,8 @@ namespace SBS {
 class SBSIMPEXP TextureManager : public ObjectBase
 {
 public:
+
+	struct TextureInfo;
 
 	bool TextureOverride; //if enabled, overrides textures with ones set with SetTextureOverride()
 	bool FlipTexture; //if enabled, flips textures according to parameters set in SetTextureFlip()
@@ -96,6 +98,11 @@ public:
 	bool ComputeTextureMap(Matrix3 &t_matrix, Vector3 &t_vector, PolyArray &vertices, const Vector3 &p1, const Vector3 &p2, const Vector3 &p3, Real tw, Real th);
 	void EnableLighting(const std::string &material_name, bool value);
 	void EnableShadows(const std::string &material_name, bool value);
+	int GetTextureInfoCount();
+	bool GetTextureInfo(int index, TextureInfo &info);
+	bool SetTextureInfo(int index, TextureInfo &info);
+	void IncrementTextureUsage(const std::string &name);
+	void DecrementTextureUsage(const std::string &name);
 
 	//override textures
 	std::string mainnegtex, mainpostex, sidenegtex, sidepostex, toptex, bottomtex;
@@ -104,6 +111,19 @@ public:
 	int mainnegflip, mainposflip, sidenegflip, sideposflip, topflip, bottomflip;
 	std::vector<Real> widthscale;
 	std::vector<Real> heightscale;
+
+	//texture information structure
+	struct TextureInfo
+	{
+		std::string name;
+		std::string material_name; //used if material is loaded instead of texture, as an alias
+		std::string filename;
+		Real widthmult;
+		Real heightmult;
+		bool enable_force; //enable forcing of tile or stretch mode?
+		bool force_mode; //false to disable autosizing, true to enable autosizing
+		int dependencies; //number of submeshes depending on this texture
+	};
 
 private:
 
@@ -132,18 +152,6 @@ private:
 	Ogre::TexturePtr LoadTexture(const std::string &filename, int mipmaps, bool &has_alpha, bool use_alpha_color = false, Ogre::ColourValue alpha_color = Ogre::ColourValue::Black);
 	void UnloadMaterials();
 	bool ComputeTextureSpace(Matrix3 &m, Vector3 &v, const Vector3 &v_orig, const Vector3 &v1, Real len1, const Vector3 &v2, Real len2);
-
-	//texture information structure
-	struct TextureInfo
-	{
-		std::string name;
-		std::string material_name; //used if material is loaded instead of texture, as an alias
-		std::string filename;
-		Real widthmult;
-		Real heightmult;
-		bool enable_force; //enable forcing of tile or stretch mode?
-		bool force_mode; //false to disable autosizing, true to enable autosizing
-	};
 
 	std::vector<TextureInfo> textureinfo;
 	std::vector<Ogre::TexturePtr> manual_textures;

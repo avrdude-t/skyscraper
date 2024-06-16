@@ -1,24 +1,24 @@
 /*
-Scalable Building Simulator - Elevator Car Object
-The Skyscraper Project - Version 1.12 Alpha
-Copyright (C)2004-2023 Ryan Thoryk
-https://www.skyscrapersim.net
-https://sourceforge.net/projects/skyscraper/
-Contact - ryan@thoryk.com
+	Scalable Building Simulator - Elevator Car Object
+	The Skyscraper Project - Version 1.12 Alpha
+	Copyright (C)2004-2024 Ryan Thoryk
+	https://www.skyscrapersim.net
+	https://sourceforge.net/projects/skyscraper/
+	Contact - ryan@skyscrapersim.net
 
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+	You should have received a copy of the GNU General Public License
+	along with this program; if not, write to the Free Software
+	Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #ifndef _SBS_ELEVATORCAR_H
@@ -59,15 +59,18 @@ public:
 	std::string DownMessageSound; //sound to play with message of elevator's direction if going down
 	std::string OpenMessageSound; //sound to play with message of elevator's doors are opening
 	std::string CloseMessageSound; //sound to play with message of elevator's doors are closing
-	std::string Music; //car music sound to play
+	std::string MusicUp; //car up music sound to play
+	std::string MusicDown; //car down music sound to play
 	std::string EmergencyStopSound; //car emergency stop sound
 	bool AlarmActive; //true if alarm is active
 	bool UseFloorBeeps; //true if floor beeps should be used
 	bool UseFloorSounds; //true if floor sounds should be used
 	bool UseDirMessageSounds; //true if direction message sounds should be used
 	bool UseDoorMessageSounds; //true if door message sounds should be used
+	bool MessageOnMove; //true if directional messages should be played when the elevator starts moving, otherwise when the doors open
 	bool MusicOn; //music enabled status
 	bool MusicOnMove; //true if music should only play during move
+	bool MusicAlwaysOn; //true if music should always be played, and the on/off state should be volume-based
 	bool AutoEnable; //true if interior objects should automatically be enabled/disabled
 	Real CameraOffset; //camera vertical offset
 	int StartingFloor; //car starting floor
@@ -271,6 +274,7 @@ private:
 	bool FirstRun; //used for setting first-run items in the run loop
 	int lastfloor;
 	bool lastfloorset;
+	int last_music_direction;
 
 	//internal data for door open/close hold feature
 	int doorhold_direction;

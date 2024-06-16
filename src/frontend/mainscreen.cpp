@@ -1,9 +1,9 @@
 /*
 	Skyscraper 1.12 Alpha - Main Screen
-	Copyright (C)2003-2023 Ryan Thoryk
+	Copyright (C)2003-2024 Ryan Thoryk
 	https://www.skyscrapersim.net
 	https://sourceforge.net/projects/skyscraper/
-	Contact - ryan@thoryk.com
+	Contact - ryan@skyscrapersim.net
 
 	This program is free software; you can redistribute it and/or
 	modify it under the terms of the GNU General Public License
@@ -32,10 +32,10 @@
 #include "globals.h"
 #include "sbs.h"
 #include "camera.h"
-#include "debugpanel.h"
+#include "gui/debugpanel.h"
 #include "skyscraper.h"
 #include "enginecontext.h"
-#include "loaddialog.h"
+#include "gui/loaddialog.h"
 #include "mainscreen.h"
 
 using namespace SBS;

@@ -1,9 +1,9 @@
 /*
 	Skyscraper 1.12 Alpha - Script Processor - Script Section
-	Copyright (C)2003-2023 Ryan Thoryk
+	Copyright (C)2003-2024 Ryan Thoryk
 	https://www.skyscrapersim.net
 	https://sourceforge.net/projects/skyscraper/
-	Contact - ryan@thoryk.com
+	Contact - ryan@skyscrapersim.net
 
 	This program is free software; you can redistribute it and/or
 	modify it under the terms of the GNU General Public License
@@ -36,7 +36,9 @@ public:
 	virtual int Run(std::string &LineData) { return 0; }
 	int SplitData(const std::string &string, int start, bool calc = true);
 	int SplitAfterEquals(const std::string &string, bool calc = true);
-	std::string GetAfterEquals(const std::string &string);
+	std::string GetAfterEquals(const std::string &string, bool &found_equals);
+	std::string GetBeforeEquals(const std::string &string, bool calc = true);
+	bool GetRange(const std::string &string, int &start, int &end);
 	int ScriptError(std::string message, bool warning = false);
 	int ScriptError();
 	int ScriptWarning(std::string message);

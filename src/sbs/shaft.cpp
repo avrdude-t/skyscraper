@@ -1,10 +1,10 @@
 /*
 	Scalable Building Simulator - Shaft Object
 	The Skyscraper Project - Version 1.12 Alpha
-	Copyright (C)2004-2023 Ryan Thoryk
+	Copyright (C)2004-2024 Ryan Thoryk
 	https://www.skyscrapersim.net
 	https://sourceforge.net/projects/skyscraper/
-	Contact - ryan@thoryk.com
+	Contact - ryan@skyscrapersim.net
 
 	This program is free software; you can redistribute it and/or
 	modify it under the terms of the GNU General Public License
@@ -28,6 +28,7 @@
 #include "elevatorcar.h"
 #include "dynamicmesh.h"
 #include "mesh.h"
+#include "polymesh.h"
 #include "sound.h"
 #include "door.h"
 #include "model.h"
@@ -181,10 +182,10 @@ bool Shaft::IsInside(const Vector3 &position)
 	if (position.y > bottom && position.y < top && Levels.size() > 0)
 	{
 		//first determine if camera has X and Z values within the first shaft floor's bounding box
-		if (Levels[0]->GetMeshObject()->InBoundingBox(position, false) == true)
+		if (Levels[0]->GetMeshObject()->GetPolyMesh()->InBoundingBox(position, false) == true)
 		{
 			//do a hit beam test from the position to the bottom of the shaft, to see if it hits a shaft floor
-			bool result = (Levels[0]->GetMeshObject()->HitBeam(position, Vector3::NEGATIVE_UNIT_Y, position.y - (bottom - 1)) >= 0);
+			bool result = (Levels[0]->GetMeshObject()->GetPolyMesh()->HitBeam(position, Vector3::NEGATIVE_UNIT_Y, position.y - (bottom - 1)) >= 0);
 
 			//cache values
 			lastcheckresult = result;
@@ -248,12 +249,15 @@ void Shaft::CutFloors(bool relative, const Vector2 &start, const Vector2 &end, R
 	voffset1 = sbs->GetFloor(startfloor)->Altitude + startvoffset;
 	voffset2 = sbs->GetFloor(endfloor)->Altitude + endvoffset;
 
-	for (size_t i = 0; i < sbs->External->Walls.size(); i++)
+	if (sbs->External)
 	{
-		if (relative == true)
-			sbs->Cut(sbs->External->Walls[i], Vector3(GetPosition().x + start.x, voffset1, GetPosition().z + start.y), Vector3(GetPosition().x + end.x, voffset2, GetPosition().z + end.y), false, true);
-		else
-			sbs->Cut(sbs->External->Walls[i], Vector3(start.x, voffset1, start.y), Vector3(end.x, voffset2, end.y), false, true);
+		for (size_t i = 0; i < sbs->External->Walls.size(); i++)
+		{
+			if (relative == true)
+				sbs->Cut(sbs->External->Walls[i], Vector3(GetPosition().x + start.x, voffset1, GetPosition().z + start.y), Vector3(GetPosition().x + end.x, voffset2, GetPosition().z + end.y), false, true);
+			else
+				sbs->Cut(sbs->External->Walls[i], Vector3(start.x, voffset1, start.y), Vector3(end.x, voffset2, end.y), false, true);
+		}
 	}
 }
 

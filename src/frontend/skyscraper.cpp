@@ -1,9 +1,9 @@
 /*
 	Skyscraper 1.12 Alpha - Simulation Frontend
-	Copyright (C)2003-2023 Ryan Thoryk
+	Copyright (C)2003-2024 Ryan Thoryk
 	https://www.skyscrapersim.net
 	https://sourceforge.net/projects/skyscraper/
-	Contact - ryan@thoryk.com
+	Contact - ryan@skyscrapersim.net
 
 	This program is free software; you can redistribute it and/or
 	modify it under the terms of the GNU General Public License
@@ -46,13 +46,13 @@
 #include "globals.h"
 #include "sbs.h"
 #include "camera.h"
-#include "debugpanel.h"
+#include "gui/debugpanel.h"
 #include "skyscraper.h"
 #include "enginecontext.h"
 #include "scriptproc.h"
-#include "console.h"
+#include "gui/console.h"
 #include "mainscreen.h"
-#include "loaddialog.h"
+#include "gui/loaddialog.h"
 #include "profiler.h"
 #include "gitrev.h"
 
@@ -91,7 +91,9 @@ IMPLEMENT_APP_NO_MAIN(Skyscraper)
 }
 
 #if OGRE_PLATFORM == OGRE_PLATFORM_WIN32
+#if OGRE_CPU != OGRE_CPU_ARM
 #include "uexception.h"
+#endif
 #endif
 
 #ifndef SW_SHOWNORMAL
@@ -163,8 +165,10 @@ int main (int argc, char* argv[])
 {
 
 #if OGRE_PLATFORM == OGRE_PLATFORM_WIN32
+#if OGRE_CPU != OGRE_CPU_ARM
 	//initialize top-level exception handler
 	Skyscraper::InitUnhandledExceptionFilter();
+#endif
 #endif
 
 #if OGRE_PLATFORM == OGRE_PLATFORM_LINUX
@@ -326,7 +330,9 @@ bool Skyscraper::OnInit(void)
 
 	//set up unhandled exception handler (crash report system)
 #if OGRE_PLATFORM == OGRE_PLATFORM_WIN32
+#if OGRE_CPU != OGRE_CPU_ARM
 	UnhandledExceptionSetRoot(this);
+#endif
 #endif
 
 	//set locale to default for conversion functions
@@ -489,8 +495,10 @@ int Skyscraper::OnExit()
 
 	Ogre::ResourceGroupManager::getSingleton().shutdownAll();
 
+#if OGRE_PLATFORM != OGRE_PLATFORM_APPLE
 	mRoot->shutdown(); //shutdown root instead of delete, to fix a crash on certain systems
 	//delete mRoot;
+#endif
 	delete logger;
 	return wxApp::OnExit();
 }
@@ -769,7 +777,7 @@ bool Skyscraper::Initialize()
 
 	std::string renderer = mRoot->getRenderSystem()->getName();
 
-	if (renderer != "Direct3D9 Rendering Subsystem" && renderer != "OpenGL Rendering Subsystem")
+	if (renderer != "Direct3D9 Rendering Subsystem" && renderer != "OpenGL Rendering Subsystem" && renderer != "Metal Rendering Subsystem")
 		RTSS = true;
 
 	if (RTSS == true)
@@ -834,7 +842,7 @@ bool Skyscraper::Initialize()
 	DisableSound = GetConfigBool("Skyscraper.Frontend.DisableSound", false);
 	if (DisableSound == false)
 	{
-		Report("\n FMOD Sound System, copyright (C) Firelight Technologies Pty, Ltd., 1994-2023\n");
+		Report("\n FMOD Sound System, copyright (C) Firelight Technologies Pty, Ltd., 1994-2024\n");
 
 		FMOD_RESULT result = FMOD::System_Create(&soundsys);
 		if (result != FMOD_OK)
@@ -863,7 +871,7 @@ bool Skyscraper::Initialize()
 				std::string s_version;
 				char hexString[25];
 
-				sprintf(hexString,"%x.%x.%x", major, minor, rev);
+				snprintf(hexString, 25, "%x.%x.%x", major, minor, rev);
 				s_version = std::string(hexString);
 
 				Report("Sound initialized: FMOD Engine version " + s_version);
@@ -1658,7 +1666,7 @@ std::string Skyscraper::SelectBuilding()
 
 	//show selection dialog window
 	wxSingleChoiceDialog Selector (0, _("Select a Building"), _("Load Building"), filelist);
-	Selector.SetSize(wxSize(350, 350));
+	Selector.SetSize(wxSize(500, 400));
 	Selector.CenterOnScreen();
 
 	if (Selector.ShowModal() == wxID_OK)
@@ -1938,7 +1946,7 @@ const std::string Skyscraper::getOgreHandle() const
 	return std::string(handleStream.str());
 
 #elif defined(__WXMAC__)
-	return std::stringConverter::toString((size_t)window->MacGetTopLevelWindowRef());
+	return Ogre::StringConverter::toString((size_t)window->MacGetTopLevelWindowRef());
 #else
 	#error Not supported on this platform!
 #endif
@@ -1980,6 +1988,9 @@ bool Skyscraper::InitSky(EngineContext *engine)
 		return false;
 
 	if (Headless == true)
+		return true;
+
+	if (Renderer == "Direct3D11")
 		return true;
 
 	//ensure graphics card and render system are capable of Caelum's shaders
@@ -2032,7 +2043,9 @@ bool Skyscraper::InitSky(EngineContext *engine)
 	}
 	catch (Ogre::Exception &e)
 	{
+#if OGRE_PLATFORM != OGRE_PLATFORM_APPLE //ignore Caelum errors on Mac, due to a Cg error (Cg is not available on ARM CPUs, and is not bundled with the Mac version)
 		ReportFatalError("Error initializing Caelum:\nDetails: " + e.getDescription());
+#endif
 		sky_error = true;
 	}
 	catch (...)

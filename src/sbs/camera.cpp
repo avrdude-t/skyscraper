@@ -1,10 +1,10 @@
 /*
 	Scalable Building Simulator - Camera Object
 	The Skyscraper Project - Version 1.12 Alpha
-	Copyright (C)2004-2023 Ryan Thoryk
+	Copyright (C)2004-2024 Ryan Thoryk
 	https://www.skyscrapersim.net
 	https://sourceforge.net/projects/skyscraper/
-	Contact - ryan@thoryk.com
+	Contact - ryan@skyscrapersim.net
 
 	This program is free software; you can redistribute it and/or
 	modify it under the terms of the GNU General Public License
@@ -107,7 +107,7 @@ Camera::Camera(Object *parent) : Object(parent)
 	EnableBullet = sbs->GetConfigBool("Skyscraper.SBS.Camera.EnableBullet", true);
 	use_startdirection = false;
 	BinocularsFOV = sbs->GetConfigFloat("Skyscraper.SBS.Camera.BinocularsFOV", 10.0);
-	RestrictRotation = sbs->GetConfigBool("Skyscraper.SBS.Camera.RestrictRotation", false);
+	RestrictRotation = sbs->GetConfigBool("Skyscraper.SBS.Camera.RestrictRotation", true);
 	AttachedModel = 0;
 	prev_orientation = Quaternion::ZERO;
 	prev_position = Vector3::ZERO;

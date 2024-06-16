@@ -1,10 +1,10 @@
 /*
 	Scalable Building Simulator - Polygon Object
 	The Skyscraper Project - Version 1.12 Alpha
-	Copyright (C)2004-2023 Ryan Thoryk
+	Copyright (C)2004-2024 Ryan Thoryk
 	https://www.skyscrapersim.net
 	https://sourceforge.net/projects/skyscraper/
-	Contact - ryan@thoryk.com
+	Contact - ryan@skyscrapersim.net
 
 	This program is free software; you can redistribute it and/or
 	modify it under the terms of the GNU General Public License
@@ -26,6 +26,7 @@
 #include "dynamicmesh.h"
 #include "triangle.h"
 #include "mesh.h"
+#include "polymesh.h"
 #include "polygon.h"
 
 namespace SBS {
@@ -40,10 +41,13 @@ Polygon::Polygon(Object *parent, const std::string &name, MeshObject *meshwrappe
 	this->plane = plane;
 	this->triangles = triangles;
 	SetName(name);
+
+	sbs->PolygonCount++;
 }
 
 Polygon::~Polygon()
 {
+	sbs->PolygonCount--;
 }
 
 void Polygon::GetTextureMapping(Matrix3 &tm, Vector3 &tv)
@@ -56,7 +60,7 @@ void Polygon::GetTextureMapping(Matrix3 &tm, Vector3 &tv)
 int Polygon::GetSubMesh()
 {
 	//return the submesh this polygon is in
-	return  mesh->FindMatchingSubMesh(material);
+	return  mesh->GetPolyMesh()->FindMatchingSubMesh(material);
 }
 
 void Polygon::GetGeometry(PolygonSet &vertices, bool firstonly, bool convert, bool rescale, bool relative, bool reverse)
@@ -77,12 +81,12 @@ void Polygon::GetGeometry(PolygonSet &vertices, bool firstonly, bool convert, bo
 	else
 		mesh_position = sbs->ToRemote(mesh->GetPosition());
 
-	int index = mesh->FindMatchingSubMesh(material);
+	int index = mesh->GetPolyMesh()->FindMatchingSubMesh(material);
 
 	if (index == -1)
 		return;
 
-	MeshObject::SubMesh &submesh = mesh->Submeshes[index];
+	PolyMesh::SubMesh &submesh = mesh->GetPolyMesh()->Submeshes[index];
 
 	for (size_t i = 0; i < index_extents.size(); i++)
 	{
@@ -139,7 +143,7 @@ void Polygon::Move(const Vector3 &position, Real speed)
 {
 	bool dynamic = mesh->UsingDynamicBuffers();
 
-	int submesh = mesh->FindMatchingSubMesh(material);
+	int submesh = mesh->GetPolyMesh()->FindMatchingSubMesh(material);
 
 	if (submesh == -1)
 		return;
@@ -151,7 +155,7 @@ void Polygon::Move(const Vector3 &position, Real speed)
 
 		for (int index = min; index <= max; index++)
 		{
-			MeshObject::Geometry &data = mesh->Submeshes[submesh].MeshGeometry[index];
+			PolyMesh::Geometry &data = mesh->GetPolyMesh()->Submeshes[submesh].MeshGeometry[index];
 			data.vertex += sbs->ToRemote(position * speed);
 
 			//update vertices in render buffer, if using dynamic buffers
@@ -166,8 +170,8 @@ void Polygon::Delete()
 	//delete polygon geometry
 
 	//delete triangles
-	std::vector<MeshObject::Geometry> geometry;
-	mesh->ProcessSubMesh(geometry, triangles, material, false);
+	std::vector<PolyMesh::Geometry> geometry;
+	mesh->GetPolyMesh()->ProcessSubMesh(geometry, triangles, material, false);
 }
 
 Plane Polygon::GetAbsolutePlane()
@@ -212,7 +216,7 @@ void Polygon::ChangeHeight(Real newheight)
 	Vector2 extents = GetExtents(2);
 
 	//modify polygon data
-	int submesh = mesh->FindMatchingSubMesh(material);
+	int submesh = mesh->GetPolyMesh()->FindMatchingSubMesh(material);
 
 	if (submesh == -1)
 		return;
@@ -224,7 +228,7 @@ void Polygon::ChangeHeight(Real newheight)
 
 		for (unsigned int index = min; index <= max; index++)
 		{
-			MeshObject::Geometry &data = mesh->Submeshes[submesh].MeshGeometry[index];
+			PolyMesh::Geometry &data = mesh->GetPolyMesh()->Submeshes[submesh].MeshGeometry[index];
 			if (data.vertex.y == sbs->ToRemote(extents.y))
 			{
 				data.vertex.y = sbs->ToRemote(extents.x + newheight);

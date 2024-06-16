@@ -1,9 +1,9 @@
 /*
 	Skyscraper 1.12 Alpha - Engine Context
-	Copyright (C)2003-2023 Ryan Thoryk
+	Copyright (C)2003-2024 Ryan Thoryk
 	https://www.skyscrapersim.net
 	https://sourceforge.net/projects/skyscraper/
-	Contact - ryan@thoryk.com
+	Contact - ryan@skyscrapersim.net
 
 	This program is free software; you can redistribute it and/or
 	modify it under the terms of the GNU General Public License
@@ -24,7 +24,7 @@
 #include "skyscraper.h"
 #include "sbs.h"
 #include "camera.h"
-#include "debugpanel.h"
+#include "gui/debugpanel.h"
 #include "scriptproc.h"
 #include "enginecontext.h"
 

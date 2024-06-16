@@ -1,10 +1,10 @@
 /*
 	Scalable Building Simulator - Stairwell Object
 	The Skyscraper Project - Version 1.12 Alpha
-	Copyright (C)2004-2023 Ryan Thoryk
+	Copyright (C)2004-2024 Ryan Thoryk
 	https://www.skyscrapersim.net
 	https://sourceforge.net/projects/skyscraper/
-	Contact - ryan@thoryk.com
+	Contact - ryan@skyscrapersim.net
 
 	This program is free software; you can redistribute it and/or
 	modify it under the terms of the GNU General Public License
@@ -26,6 +26,7 @@
 #include "floor.h"
 #include "dynamicmesh.h"
 #include "mesh.h"
+#include "polymesh.h"
 #include "control.h"
 #include "sound.h"
 #include "door.h"
@@ -191,21 +192,21 @@ bool Stairwell::IsInside(const Vector3 &position)
 		//check for hit with current floor
 		Real distance = floorptr->FullHeight();
 		if (GetLevel(floor))
-			hit = GetLevel(floor)->GetMeshObject()->HitBeam(position, Vector3::NEGATIVE_UNIT_Y, distance) >= 0;
+			hit = GetLevel(floor)->GetMeshObject()->GetPolyMesh()->HitBeam(position, Vector3::NEGATIVE_UNIT_Y, distance) >= 0;
 
 		//if no hit, check hit against lower floor
 		if (hit == false && sbs->GetFloor(floor - 1) && floor > startfloor)
 		{
 			distance = position.y - sbs->GetFloor(floor - 1)->Altitude;
 			if (GetLevel(floor - 1))
-				hit = GetLevel(floor - 1)->GetMeshObject()->HitBeam(position, Vector3::NEGATIVE_UNIT_Y, distance) >= 0;
+				hit = GetLevel(floor - 1)->GetMeshObject()->GetPolyMesh()->HitBeam(position, Vector3::NEGATIVE_UNIT_Y, distance) >= 0;
 		}
 
 		//if no hit, check hit against starting floor
 		if (hit == false && sbs->GetFloor(startfloor))
 		{
 			distance = position.y - sbs->GetFloor(startfloor)->Altitude;
-			hit = GetLevel(startfloor)->GetMeshObject()->HitBeam(position, Vector3::NEGATIVE_UNIT_Y, distance) >= 0;
+			hit = GetLevel(startfloor)->GetMeshObject()->GetPolyMesh()->HitBeam(position, Vector3::NEGATIVE_UNIT_Y, distance) >= 0;
 		}
 	}
 	floorptr = 0;
@@ -255,12 +256,16 @@ void Stairwell::CutFloors(bool relative, const Vector2 &start, const Vector2 &en
 	//cut external
 	voffset1 = sbs->GetFloor(startfloor)->Altitude + startvoffset;
 	voffset2 = sbs->GetFloor(endfloor)->Altitude + endvoffset;
-	for (size_t i = 0; i < sbs->External->Walls.size(); i++)
+
+	if (sbs->External)
 	{
-		if (relative == true)
-			sbs->Cut(sbs->External->Walls[i], Vector3(GetPosition().x + start.x, voffset1, GetPosition().z + start.y), Vector3(GetPosition().x + end.x, voffset2, GetPosition().z + end.y), false, true);
-		else
-			sbs->Cut(sbs->External->Walls[i], Vector3(start.x, voffset1, start.y), Vector3(end.x, voffset2, end.y), false, true);
+		for (size_t i = 0; i < sbs->External->Walls.size(); i++)
+		{
+			if (relative == true)
+				sbs->Cut(sbs->External->Walls[i], Vector3(GetPosition().x + start.x, voffset1, GetPosition().z + start.y), Vector3(GetPosition().x + end.x, voffset2, GetPosition().z + end.y), false, true);
+			else
+				sbs->Cut(sbs->External->Walls[i], Vector3(start.x, voffset1, start.y), Vector3(end.x, voffset2, end.y), false, true);
+		}
 	}
 }
 

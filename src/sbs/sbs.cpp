@@ -1,10 +1,10 @@
 /*
 	Scalable Building Simulator - Core
 	The Skyscraper Project - Version 1.12 Alpha
-	Copyright (C)2004-2023 Ryan Thoryk
+	Copyright (C)2004-2024 Ryan Thoryk
 	https://www.skyscrapersim.net
 	https://sourceforge.net/projects/skyscraper/
-	Contact - ryan@thoryk.com
+	Contact - ryan@skyscrapersim.net
 
 	This program is free software; you can redistribute it and/or
 	modify it under the terms of the GNU General Public License
@@ -57,6 +57,7 @@
 #include "doorsystem.h"
 #include "gitrev.h"
 #include "buttonpanel.h"
+#include "polymesh.h"
 
 namespace SBS {
 
@@ -502,6 +503,9 @@ bool SBS::Start(Ogre::Camera *camera)
 	if (RandomActivity == true)
 		EnableRandomActivity(true);
 
+	//print a memory report
+	//MemoryReport();
+
 	IsRunning = true;
 
 	return true;
@@ -511,7 +515,7 @@ void SBS::PrintBanner()
 {
 	Report("");
 	Report(" Scalable Building Simulator " + version + " " + version_state);
-	Report(" Copyright (C)2004-2023 Ryan Thoryk");
+	Report(" Copyright (C)2004-2024 Ryan Thoryk");
 	Report(" This software comes with ABSOLUTELY NO WARRANTY. This is free");
 	Report(" software, and you are welcome to redistribute it under certain");
 	Report(" conditions. For details, see the file gpl.txt\n");
@@ -1428,7 +1432,9 @@ void SBS::EnableLandscape(bool value)
 void SBS::EnableExternal(bool value)
 {
 	//turns external on/off
-	External->Enabled(value);
+
+	if (External)
+		External->Enabled(value);
 	IsExternalEnabled = value;
 }
 
@@ -3004,7 +3010,7 @@ void SBS::Prepare(bool report)
 	for (size_t i = 0; i < meshes.size(); i++)
 	{
 		if (meshes[i]->tricollider == true)
-			meshes[i]->CreateCollider();
+			meshes[i]->GetPolyMesh()->CreateCollider();
 		else
 			meshes[i]->CreateBoxCollider();
 	}
@@ -3779,7 +3785,7 @@ bool SBS::HitBeam(const Ray &ray, Real max_distance, MeshObject *&mesh, Wall *&w
 	Vector3 isect;
 	Real distance = 2000000000.;
 	Vector3 normal = Vector3::ZERO;
-	wall = mesh->FindWallIntersect(ray.getOrigin(), ray.getPoint(max_distance), isect, distance, normal);
+	wall = mesh->GetPolyMesh()->FindWallIntersect(ray.getOrigin(), ray.getPoint(max_distance), isect, distance, normal);
 
 	return true;
 }
@@ -4019,7 +4025,7 @@ void SBS::CutOutsideBoundaries(bool landscape, bool buildings, bool external, bo
 		Landscape->CutOutsideBounds(min, max, true, true);
 	if (buildings == true)
 		Buildings->CutOutsideBounds(min, max, true, true);
-	if (external == true)
+	if (external == true && External)
 		External->CutOutsideBounds(min, max, true, true);
 
 	if (floors == true)
@@ -4038,7 +4044,7 @@ void SBS::CutInsideBoundaries(const Vector3 &min, const Vector3 &max, bool lands
 		Landscape->Cut(min, max, true, true);
 	if (buildings == true)
 		Buildings->Cut(min, max, true, true);
-	if (external == true)
+	if (external == true && External)
 		External->Cut(min, max, true, true);
 
 	if (floors == true)
@@ -4237,6 +4243,28 @@ CameraTexture* SBS::GetCameraTexture(int number)
 	if (number < camtexarray.size())
 		return camtexarray[number];
 	return 0;
+}
+
+void SBS::MemoryReport()
+{
+	//report on simulator memory usage
+
+	Real mesh_total = 0;
+	Real mesh_part = 0;
+
+	for (int i = 0; i < meshes.size(); i++)
+	{
+		mesh_total += (meshes[i]->GetPolyMesh()->GetSize() / 1024.0) / 1024.0; //convert to megabytes
+		if (meshes[i]->IsEnabled() == true)
+			mesh_part += (meshes[i]->GetPolyMesh()->GetSize() / 1024.0) / 1024.0; //convert to megabytes
+	}
+
+	Report("Memory Usage Report");
+	Report("-------------------");
+	Report("");
+	Report("Meshes Total: " + TruncateNumber(ToString(mesh_total), 2) + " megabytes");
+	Report("Enabled Meshes: " + TruncateNumber(ToString(mesh_part), 2) + " megabytes");
+	Report("");
 }
 
 }
